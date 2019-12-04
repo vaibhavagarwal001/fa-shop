@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Bakingo;
+namespace App\Models\Bakingo;
 
 use Illuminate\Database\Eloquent\Model;
 
