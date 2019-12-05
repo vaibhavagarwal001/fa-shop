@@ -12,6 +12,17 @@ use Illuminate\Support\Facades\Config;
 
 class ProductsController extends Controller
 {
+
+
+    protected $ResponseComponent;
+
+
+    public function __construct(){
+        $result = DB::connection('bakingo_mysql')->select(DB::raw("set sql_mode=''"));
+        $this->ResponseComponent = new ResponseComponent();
+    }
+
+
     //
     /**
      * 
@@ -44,9 +55,7 @@ class ProductsController extends Controller
      */
     public function getlisting($currentPage = 1)
     {
-        $ResponseComponent = new ResponseComponent();
         try {
-            $result = DB::connection('bakingo_mysql')->select(DB::raw("set sql_mode=''"));
             $totalRecords = $this->getListingCount();
             $limit = 10;
             $offset = ($currentPage - 1) * $limit;
@@ -100,7 +109,7 @@ class ProductsController extends Controller
                         "amount" => (int) $node->amount,
                         "sell_price_amount" => (!empty($node->field_sell_price_amount)) ? $node->field_sell_price_amount / 100 : 0,
                         "mini_desc" => $node->field_mini_description_value,
-                        "image_url" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:///", "sites/default/files/", $node->uri)
+                        "image_url" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:", "", str_replace("/", "", $node->uri))                        
                     ];
                 }
                 $data = $temp;
@@ -112,14 +121,14 @@ class ProductsController extends Controller
                 ];
                 $response['pagination'] = $pagination;
                 $messages = "Records Found Successfully";
-                $response =  $ResponseComponent->success($messages, $data, $pagination);
+                $response =  $this->ResponseComponent->success($messages, $data, $pagination);
             } else {
                 // no record Found
                 $messages = "No record Found";
-                $response =  $ResponseComponent->error($messages);
+                $response =  $this->ResponseComponent->error($messages);
             }
         } catch (Exception $e) { 
-            $response =  $ResponseComponent->exception($e->getMessage());            
+            $response =  $this->ResponseComponent->exception($e->getMessage());            
         }
         
         return response()->json($response);
@@ -158,9 +167,7 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
     *  */
 
     public function getdetails($nid){
-        $result = DB::connection('bakingo_mysql');
-        // ->select(DB::raw("set sql_mode=''"));
-
+      try{
         $Nodes = Nodes::join('field_data_field_product' , function($join){
             $join->on('field_data_field_product.entity_id', '=', 'node.nid'); 
         })->join('commerce_product' , function($join){
@@ -209,7 +216,6 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
         // exit;
 
         // get images
-
         $NodesImg = Nodes::join('field_data_field_images' , function($join){
             $join->on('field_data_field_images.entity_id', '=', 'node.nid'); 
         })->join('file_managed' , function($join){
@@ -227,7 +233,7 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
 
         $response = [];
         if($Nodes->first()){
-            $response['product'] = [
+            $response = [
                 "node_id" => $Nodes[0]->nid,
                 "product_type" => $Nodes[0]->type,
                 "product_id" => $Nodes[0]->product_id,
@@ -255,14 +261,15 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
                 if($node->field_tx_occasion_list_tid != null) {
                   $oc[$node->field_tx_occasion_list_tid] = $node->occasion;
                 }
-                    
             }
-            $response['product']['attributes']['weight'] = $wt;
-            $response['product']['attributes']['flavour'] = $fl;
-            $response['product']['attributes']['occasion'] = $oc;
+            $response['attributes']['weight'] = $wt;
+            $response['attributes']['flavour'] = $fl;
+            $response['attributes']['occasion'] = $oc;
             // $response['product']['attributes']['occasion'] = $fl;
         } else {
-            $response = ['No Record'];
+            // no record Found
+            $messages = "No record Found";
+            $response =  $this->ResponseComponent->error($messages);
         }
         $images = [];
         if($NodesImg->first()) {
@@ -270,13 +277,17 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
             $images[] = [
               "fid" => $node->fid,
               "name" => $node->filename,
-              "uri" => $node->uri,
+              "uri" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:", "", str_replace("/", "", $node->uri)),
             ];
           }
         }
-        $response['product']['images'] = $images;
+        $response['images'] = $images;
+        $messages = "Records Found Successfully";
+        $response =  $this->ResponseComponent->success($messages, $response);
+      } catch (Exception $e) { 
+        $response =  $this->ResponseComponent->exception($e->getMessage());            
+      }
 
-
-        return response()->json($response);
+      return response()->json($response);
     }
 }
