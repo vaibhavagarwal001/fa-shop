@@ -18,4 +18,5 @@ use Illuminate\Http\Request;
 // });
 
 Route::get('getlisting', 'ProductsController@getlisting');
+Route::get('getdetails/{nid}', 'ProductsController@getdetails');
 
