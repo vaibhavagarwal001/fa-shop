@@ -17,5 +17,5 @@ use Illuminate\Http\Request;
 //     return $request->user();
 // });
 
+Route::get('getlisting/{currentPage}', 'ProductsController@getlisting');
 Route::get('getlisting', 'ProductsController@getlisting');
-
