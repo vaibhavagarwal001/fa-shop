@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Bakingo;
 
 use Illuminate\Http\Request;
 use App\Models\Bakingo\Nodes;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 
 use App\Http\Controllers\Component\ResponseComponent;
 use Exception;
