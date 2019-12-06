@@ -11,6 +11,17 @@
 |
 */
 
+// use Illuminate\Routing\Route;
+
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+Route::get('getlisting', 'ProductsController@getlisting');
+Route::get('getlisting/{currentPage}', 'ProductsController@getlisting');
+
+Route::get('getdetails/{nid}', 'ProductsController@getdetails');
+
+// Route::get('getlisting', 'ProductsController@getlisting');
+
