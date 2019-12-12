@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
-use App\Models\Floweraura\PlViewUrlMapping as FlowerauraUrls;
+// use App\Models\Floweraura\PlViewUrlMapping as FlowerauraUrls;
 // use App\Models\Bakingo\PlViewUrlMapping as BakingoUrls;
 /*
 |--------------------------------------------------------------------------
@@ -19,18 +19,18 @@ use App\Models\Floweraura\PlViewUrlMapping as FlowerauraUrls;
 // });
 
 
-$PlViewUrlMappings = FlowerauraUrls::select('view_display_url')->get();
+// $PlViewUrlMappings = FlowerauraUrls::select('view_display_url')->get();
 // $PlViewUrlMappingsBakingo = BakingoUrls::select('view_display_url')->get();
 
 
 $merchant_fa = "Floweraura\\";
 $merchant_bk = "Bakingo\\";
 
-foreach($PlViewUrlMappings as $PlViewUrlMapping){
-    Route::group( array('prefix' => 'floweraura'), function() use ($merchant_fa , $PlViewUrlMapping) {
-        Route::get($PlViewUrlMapping->view_display_url, $merchant_fa . 'ProductsController@getlisting'); 
-    });
-}
+// foreach($PlViewUrlMappings as $PlViewUrlMapping){
+//     Route::group( array('prefix' => 'floweraura'), function() use ($merchant_fa , $PlViewUrlMapping) {
+//         Route::get($PlViewUrlMapping->view_display_url, $merchant_fa . 'ProductsController@getlisting'); 
+//     });
+// }
 
 // foreach($PlViewUrlMappingsBakingo as $PlViewUrlMappingBakingo){
 //     Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk , $PlViewUrlMappingBakingo) {
@@ -49,12 +49,11 @@ Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk) {
     Route::get('cakes/for-him', $merchant_bk . 'ProductsController@getlisting');
     Route::get('cakes/for-him/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
     Route::get('getlisting/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
-    Route::get('meta-info/getlisting', $merchant_bk . 'ProductsController@getMetaInfo');
-    Route::get('meta-info/chocolate-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
-    Route::get('meta-info/eggless-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
-    Route::get('meta-info/cake-delivery', $merchant_bk . 'ProductsController@getMetaInfo');
-    Route::get('meta-info/photo-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
-    Route::get('meta-info/cakes/for-him', $merchant_bk . 'ProductsController@getMetaInfo');
+    Route::get('meta-info/getlisting', $merchant_bk . 'MetaInfoController@getMetaInfo');
+    Route::get('meta-info/chocolate-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
+    Route::get('meta-info/eggless-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
+    Route::get('meta-info/cake-delivery', $merchant_bk . 'MetaInfoController@getMetaInfo');
+    Route::get('meta-info/photo-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
     
     /** These will remove once the Module for the URL comes */
 
