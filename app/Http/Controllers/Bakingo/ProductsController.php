@@ -28,12 +28,13 @@ class ProductsController extends Controller
 
 
     protected $ResponseComponent;
-
+    protected $merchantId;
 
     public function __construct()
     {
         $result = DB::connection('bakingo_mysql')->select(DB::raw("set sql_mode=''"));
         $this->ResponseComponent = new ResponseComponent();
+        $this->merchantId = Config::get("constant.MERCHANT_ID.BAKINGO");
     }
 
     //
@@ -55,6 +56,7 @@ class ProductsController extends Controller
             $Nodes = $Nodes->join('api_attribute_map as filter_attribute', function ($join) use ($field_attributes_tid) {
                 $join->on('filter_attribute.nid', '=', 'api_products.nid');
                 $join->whereIn('filter_attribute.attr_id' , $field_attributes_tid);
+                $join->where('filter_attribute.merchant_id' , $this->merchantId);
             });
         }
 
@@ -62,6 +64,7 @@ class ProductsController extends Controller
             $Nodes = $Nodes->join('api_attribute_map as filter_age_group', function ($join) use ($field_age_group_tid) {
                 $join->on('filter_age_group.nid', '=', 'api_products.nid');
                 $join->whereIn('filter_age_group.attr_id' , $field_age_group_tid);
+                $join->where('filter_age_group.merchant_id' , $this->merchantId);
             });
         }
 
@@ -69,13 +72,15 @@ class ProductsController extends Controller
             $Nodes = $Nodes->join('api_attribute_map as filter_gender', function ($join) use ($field_tx_gender_tid) {
                 $join->on('filter_gender.nid', '=', 'api_products.nid');
                 $join->whereIn('filter_gender.attr_id' , $field_tx_gender_tid);
+                $join->where('filter_gender.merchant_id' , $this->merchantId);
             });
         }
 
         if(!empty($field_occasion_value)){
-            $Nodes = $Nodes->join('api_attribute_map as filter_occasion', function ($join) use ($field_occasion_value) {
-                $join->on('filter_occasion.nid', '=', 'api_products.nid');
-                $join->whereIn('filter_occasion.attr_id' , $field_occasion_value);
+            $Nodes = $Nodes->join('field_data_field_occasion as filter_occasion', function ($join) use ($field_occasion_value) {
+                $join->on('filter_occasion.entity_id', '=', 'api_products.nid');
+                $join->whereIn('filter_occasion.field_occasion_value' , $field_occasion_value);
+                // $join->where('filter_occasion.merchant_id' , $this->merchantId);
             });
         }
 
@@ -83,6 +88,7 @@ class ProductsController extends Controller
             $Nodes = $Nodes->join('api_attribute_map as filter_flavour', function ($join) use ($field_flavour_tid) {
                 $join->on('filter_flavour.nid', '=', 'api_products.nid');
                 $join->whereIn('filter_flavour.attr_id' , $field_flavour_tid);
+                $join->where('filter_flavour.merchant_id' , $this->merchantId);
             });
         }
 
@@ -102,8 +108,10 @@ class ProductsController extends Controller
         try {
             $path = $request->path();
             $path = str_replace("api/bakingo/", "", $path);
-
-            $nodeIds = [4982 ,188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209];
+            $nodeIds = ApiProducts::where([
+                ["api_products.status", "=", "1"]
+            ])->select('nid')->get();
+            // $nodeIds = [1971 , 4982 ,188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209];
 
             // $UrlMapping = BakingoUrls::join('pl_view_product_mapping', function ($join) {
             //     $join->on('pl_view_product_mapping.pl_id', '=', 'pl_view_url_mapping.pl_id');
@@ -117,8 +125,9 @@ class ProductsController extends Controller
             //         $nodeIds[] = $UrlMappings->nid;
             //     }
             // }
-            $Nodes = ApiProducts::join('api_product_images', function ($join) {
+            $Nodes = ApiProducts::leftjoin('api_product_images', function ($join) {
                 $join->on('api_product_images.nid', '=', 'api_products.nid');
+                $join->where('api_product_images.sort_order' , 0);
             });
 
             $requestData = $request->all();
@@ -128,10 +137,32 @@ class ProductsController extends Controller
             $field_occasion_value = isset($requestData['field_occasion_value']) ? $requestData['field_occasion_value'] : "";
             $field_flavour_tid = isset($requestData['field_flavour_tid']) ? $requestData['field_flavour_tid'] : "";
             
+            $sort = isset($requestData['sort']) ? $requestData['sort'] : "field_product_order_value";
+            $sort_order = isset($requestData['direction']) ? $requestData['direction'] : "ASC";
+            $sortBy = "api_products.nid";
+
+            if(!empty($sort)){
+                switch($sort){
+                    case "field_product_order_value":
+                        $Nodes = $Nodes->leftjoin('field_data_field_product_order', function ($join) use ($sort) {
+                            $join->on('field_data_field_product_order.entity_id', '=', 'api_products.nid');
+                        });
+                        $sortBy = "field_data_field_product_order.".$sort;
+                        break;
+                    case "commerce_price_amount":
+                        $Nodes = $Nodes->leftjoin('api_product_price', function ($join) use ($sort) {
+                            $join->on('api_product_price.nid', '=', 'api_products.nid');
+                        });
+                        $sortBy = "api_product_price.price";
+                        break;
+                }
+            }
+            
             if(!empty($field_attributes_tid)){
                 $Nodes = $Nodes->join('api_attribute_map as filter_attribute', function ($join) use ($field_attributes_tid) {
                     $join->on('filter_attribute.nid', '=', 'api_products.nid');
                     $join->whereIn('filter_attribute.attr_id' , $field_attributes_tid);
+                    $join->where('filter_attribute.merchant_id' , $this->merchantId);
                 });
             }
 
@@ -139,6 +170,7 @@ class ProductsController extends Controller
                 $Nodes = $Nodes->join('api_attribute_map as filter_age_group', function ($join) use ($field_age_group_tid) {
                     $join->on('filter_age_group.nid', '=', 'api_products.nid');
                     $join->whereIn('filter_age_group.attr_id' , $field_age_group_tid);
+                    $join->where('filter_age_group.merchant_id' , $this->merchantId);
                 });
             }
 
@@ -146,13 +178,15 @@ class ProductsController extends Controller
                 $Nodes = $Nodes->join('api_attribute_map as filter_gender', function ($join) use ($field_tx_gender_tid) {
                     $join->on('filter_gender.nid', '=', 'api_products.nid');
                     $join->whereIn('filter_gender.attr_id' , $field_tx_gender_tid);
+                    $join->where('filter_gender.merchant_id' , $this->merchantId);
                 });
             }
 
             if(!empty($field_occasion_value)){
-                $Nodes = $Nodes->join('api_attribute_map as filter_occasion', function ($join) use ($field_occasion_value) {
-                    $join->on('filter_occasion.nid', '=', 'api_products.nid');
-                    $join->whereIn('filter_occasion.attr_id' , $field_occasion_value);
+                $Nodes = $Nodes->join('field_data_field_occasion as filter_occasion', function ($join) use ($field_occasion_value) {
+                    $join->on('filter_occasion.entity_id', '=', 'api_products.nid');
+                    $join->whereIn('filter_occasion.field_occasion_value' , $field_occasion_value);
+                    // $join->where('filter_occasion.merchant_id' , $this->merchantId);
                 });
             }
 
@@ -160,6 +194,7 @@ class ProductsController extends Controller
                 $Nodes = $Nodes->join('api_attribute_map as filter_flavour', function ($join) use ($field_flavour_tid) {
                     $join->on('filter_flavour.nid', '=', 'api_products.nid');
                     $join->whereIn('filter_flavour.attr_id' , $field_flavour_tid);
+                    $join->where('filter_flavour.merchant_id' , $this->merchantId);
                 });
             }
 
@@ -171,17 +206,14 @@ class ProductsController extends Controller
             
             $Nodes = $Nodes->whereIn("api_products.nid", $nodeIds)
                 ->where([
-                    ["api_products.status", "=", "1"],
-                    ["api_product_images.sort_order", "=", "0"],
+                    ["api_products.status", "=", "1"]
                 ])
                 ->select("api_products.nid", "api_products.type", "api_products.long_title", "api_products.title", "api_products.alias", "api_products.amount", "api_products.amount", "api_products.sell_price", "api_products.descr", "api_product_images.uri")
-                ->orderBy("api_products.nid", "asc")
+                ->orderBy($sortBy, $sort_order)
                 ->groupBy("api_products.nid")
                 ->limit($limit)
                 ->offset($offset)
                 ->get();
-                // echo $Nodes;
-                // exit; 
 
             if ($Nodes->first()) {
                 $data = $temp = [];

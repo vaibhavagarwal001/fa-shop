@@ -46,12 +46,15 @@ Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk) {
     Route::get('chocolate-cakes', $merchant_bk . 'ProductsController@getlisting');
     Route::get('photo-cakes', $merchant_bk . 'ProductsController@getlisting');
     Route::get('photo-cakes/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
+    Route::get('cakes/for-him', $merchant_bk . 'ProductsController@getlisting');
+    Route::get('cakes/for-him/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
     Route::get('getlisting/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
     Route::get('meta-info/getlisting', $merchant_bk . 'ProductsController@getMetaInfo');
     Route::get('meta-info/chocolate-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
     Route::get('meta-info/eggless-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
     Route::get('meta-info/cake-delivery', $merchant_bk . 'ProductsController@getMetaInfo');
     Route::get('meta-info/photo-cakes', $merchant_bk . 'ProductsController@getMetaInfo');
+    Route::get('meta-info/cakes/for-him', $merchant_bk . 'ProductsController@getMetaInfo');
     
     /** These will remove once the Module for the URL comes */
 
