@@ -2,8 +2,11 @@
 
 namespace App\Exceptions;
 
+use App\Http\Controllers\Component\ResponseComponent;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -46,6 +49,17 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        $responseController = new ResponseComponent(); 
+        if ($exception instanceof ModelNotFoundException && $request->wantsJson()) {
+            $response = $responseController->error('Resource / Model not found');
+            return response()->json($response, 404);
+        }
+        
+        if($exception instanceof HttpException && $request->wantsJson()){
+            $response = $responseController->error('Invalid URL');
+            return response()->json($response, 404);
+        }
+        
         return parent::render($request, $exception);
     }
 }

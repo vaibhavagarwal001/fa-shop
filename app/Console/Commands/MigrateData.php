@@ -12,6 +12,7 @@ use App\Models\Api_products;
 use App\Models\Api_product_images;
 use App\Models\Api_product_price;
 use App\Models\Api_attribute_map;
+use Exception;
 
 class MigrateData extends Command
 {
