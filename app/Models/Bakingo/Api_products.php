@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Bakingo;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Api_products extends Model
+class Api_products extends BKModel
 {
     //
     protected $table = 'api_products';

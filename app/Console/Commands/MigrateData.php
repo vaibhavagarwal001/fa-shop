@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\Bakingo\Nodes;
-use App\Models\Api_products;
-use App\Models\Api_product_images;
-use App\Models\Api_product_price;
-use App\Models\Api_attribute_map;
+use App\Models\Bakingo\Api_products;
+use App\Models\Bakingo\Api_product_images;
+use App\Models\Bakingo\Api_product_price;
+use App\Models\Bakingo\Api_attribute_map;
 
 class MigrateData extends Command
 {

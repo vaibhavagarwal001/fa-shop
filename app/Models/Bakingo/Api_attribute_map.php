@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Bakingo;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Api_attribute_map extends Model
+class Api_attribute_map extends BKModel
 {
     //
     protected $table = 'api_attribute_map';
