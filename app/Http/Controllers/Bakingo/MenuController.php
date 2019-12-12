@@ -35,6 +35,9 @@ class MenuController extends Controller
                     $data["main-menu"] = $this->prepareMainMenu();
                     $data["footer-menu"] = $this->prepareFooterMenu();
                     break;
+                case 'quick-links':
+                    $data = $this->prepareQuicklinks();
+                    break;
             }
             if(empty($data)){
                 $response = $this->ResponseComponent->error("No Menu Found.");    
@@ -89,6 +92,31 @@ class MenuController extends Controller
 
         $menu = [];
         
+        foreach($MenuLinks as $MenuLink){
+            $menuData = [
+                "menu_name" => $MenuLink->menu_name,
+                "link_path"=> $MenuLink->link_path,
+                "router_path"=> $MenuLink->router_path,
+                "link_title"=> $MenuLink->link_title,
+                "has_children"=> $MenuLink->has_children
+            ];
+            if(!empty($MenuLink->plid)){
+                $menu[$MenuLink->menu_name][$MenuLink->plid]["children"][] = $menuData;
+            }else{
+                $menu[$MenuLink->menu_name][$MenuLink->mlid] = $menuData;
+            }
+        }
+        return $menu;
+    }
+
+    public function prepareQuicklinks(){
+        $MenuLinks = MenuLinks::where([
+            ["module" ,  "=" , "menu"],
+            ["hidden" ,"=" ,0],
+            ["menu_name", "=" ,"menu-quicklinks"]            
+        ])
+        ->get();
+        $menu = [];
         foreach($MenuLinks as $MenuLink){
             $menuData = [
                 "menu_name" => $MenuLink->menu_name,

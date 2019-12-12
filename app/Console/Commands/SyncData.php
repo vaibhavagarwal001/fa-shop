@@ -12,6 +12,7 @@ use App\Models\Bakingo\Api_products;
 use App\Models\Bakingo\Api_product_images;
 use App\Models\Bakingo\Api_product_price;
 use App\Models\Bakingo\Api_attribute_map;
+use Exception;
 
 class SyncData extends Command
 {

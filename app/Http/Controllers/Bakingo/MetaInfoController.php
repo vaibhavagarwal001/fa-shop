@@ -10,7 +10,8 @@ use App\Models\Bakingo\TaxonomyVocabulary;
 use App\Models\Bakingo\MenuRouters;
 use App\Models\Bakingo\ViewsDisplay;
 use App\Models\Bakingo\ViewsView;
-
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class MetaInfoController extends Controller
 {
