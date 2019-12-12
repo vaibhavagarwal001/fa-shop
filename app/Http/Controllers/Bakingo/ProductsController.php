@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Bakingo;
 
 use Illuminate\Http\Request;
 use App\Models\Bakingo\Nodes;
+
+use App\Models\Api_products;
+
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
@@ -168,127 +171,226 @@ WHERE n.type IN ('regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastri
     *  */
 
     public function getdetails($nid){
-      try{
-        $Nodes = Nodes::join('field_data_field_product' , function($join){
-            $join->on('field_data_field_product.entity_id', '=', 'node.nid'); 
-        })->join('commerce_product' , function($join){
-            $join->on('field_data_field_product.field_product_product_id', '=', 'commerce_product.product_id');
-        })->join('field_data_field_long_title' , function($join){
-            $join->on('field_data_field_long_title.entity_id', '=', 'node.nid');
-        })->join('field_data_field_mini_description' , function($join){
-            $join->on('field_data_field_mini_description.entity_id', '=', 'node.nid');
-        })->join('field_data_field_description' , function($join){
-            $join->on('field_data_field_description.entity_id', '=', 'node.nid');
-        })->leftjoin('field_data_commerce_price' , function($join){
-            $join->on('field_data_commerce_price.entity_id', '=', 'commerce_product.product_id');
-        })->leftjoin('field_data_field_sell_price' , function($join){
-            $join->on('field_data_field_sell_price.entity_id', '=', 'commerce_product.product_id');
-        // })->leftjoin('field_data_field_cost_price' , function($join){
-        //     $join->on('field_data_field_cost_price.entity_id', '=', 'commerce_product.product_id');
-        })->leftjoin('field_data_field_weight' , function($join){
-            $join->on('field_data_field_weight.entity_id', '=', 'commerce_product.product_id');
-        })->leftjoin('taxonomy_term_data' , function($join){
-            $join->on('taxonomy_term_data.tid', '=', 'field_data_field_weight.field_weight_tid');
-        })->leftjoin('field_data_field_flavour' , function($join){
-            $join->on('field_data_field_flavour.entity_id', '=', 'node.nid');
-        })->leftjoin('taxonomy_term_data as txflv' , function($join){
-            $join->on('txflv.tid', '=', 'field_data_field_flavour.field_flavour_tid');
-        // })->leftjoin('field_data_field_tx_occasion_list' , function($join){
-        //     $join->on('field_data_field_tx_occasion_list.entity_id', '=', 'node.nid');
-        // })->leftjoin('taxonomy_term_data as txocc' , function($join){
-        //     $join->on('txocc.tid', '=', 'field_data_field_tx_occasion_list.field_tx_occasion_list_tid');
-        })->whereIn("node.type" , ['regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastries', 'photo_cake', 'plum_cake', 'theme_cake', 'addon'])
-        ->where([
-            ["node.status" , "=" , "1"],
-            ["node.nid" , "=" , $nid]
-            ])
-        // ->groupBy("commerce_product.product_id")
-        ->select("node.nid", "node.type", "commerce_product.product_id", "commerce_product.sku", "node.title",
-          DB::raw("field_data_field_long_title.field_long_title_value AS long_title"),
-          DB::raw("(field_data_commerce_price.commerce_price_amount / 100) AS amount") ,
-          DB::raw("(field_data_field_sell_price.field_sell_price_amount / 100) AS sell_price") ,
-          DB::raw("(taxonomy_term_data.name) AS weight"), "field_data_field_weight.field_weight_tid",
-          DB::raw("(txflv.name) AS flavour"), "field_data_field_flavour.field_flavour_tid",
-        //   DB::raw("(txocc.name) AS occasion"), "field_data_field_tx_occasion_list.field_tx_occasion_list_tid",
-           'field_data_field_mini_description.field_mini_description_value')
-        ->get();
-        // ->toSql();
-        // print_r($Nodes);
-        // exit;
-
-        // get images
-        $NodesImg = Nodes::join('field_data_field_images' , function($join){
-            $join->on('field_data_field_images.entity_id', '=', 'node.nid'); 
-        })->join('file_managed' , function($join){
-            $join->on('file_managed.fid', '=', 'field_data_field_images.field_images_fid');
-        })->whereIn("node.type" , ['regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastries', 'photo_cake', 'plum_cake', 'theme_cake', 'addon'])
-        ->where([
-            ["node.status" , "=" , "1"],
-            ["node.nid" , "=" , $nid]
-            ])
-        // ->groupBy("commerce_product.product_id")
-        ->select("file_managed.fid", "file_managed.filename", "file_managed.uri", "field_data_field_images.field_images_alt", "field_data_field_images.field_images_title" )
-        ->orderBy("field_data_field_images.delta")
-        ->get();
-        // dd($NodesImg);
-
-        $response = [];
-        if($Nodes->first()){
-            $response = [
-                "node_id" => $Nodes[0]->nid,
-                "product_type" => $Nodes[0]->type,
-                "product_id" => $Nodes[0]->product_id,
-                "sku" => $Nodes[0]->sku,
-                "title" => $Nodes[0]->title,
-                "long_title" => $Nodes[0]->long_title,
-                "amount" => $Nodes[0]->amount,
-                "sell_price" => $Nodes[0]->sell_price,
-                "mini_desc" => $Nodes[0]->field_mini_description_value,                
-            ];
-            $wt = $fl = $oc = [];
-            foreach($Nodes as $node){
-                // prepare weight array here
-                $wt[$node->field_weight_tid] = [
-                    "weight" => $node->weight,
-                    "price" => $node->amount,
-                    "sprice" => $node->sell_price,
-                    // "cprice" => $node->amount,
-                ];
-                // prepare flavour array here
-                if($node->field_flavour_tid != null) {
-                  $fl[$node->field_flavour_tid] = $node->flavour;
-                }
-                // prepare occasion array here
-                if($node->field_tx_occasion_list_tid != null) {
-                  $oc[$node->field_tx_occasion_list_tid] = $node->occasion;
-                }
-            }
-            $response['attributes']['weight'] = $wt;
-            $response['attributes']['flavour'] = $fl;
-            $response['attributes']['occasion'] = $oc;
-            // $response['product']['attributes']['occasion'] = $fl;
-        } else {
-            // no record Found
-            $messages = "No record Found";
-            $response =  $this->ResponseComponent->error($messages);
-        }
-        $images = [];
-        if($NodesImg->first()) {
-          foreach($NodesImg as $node) {
-            $images[] = [
-              "fid" => $node->fid,
-              "name" => $node->filename,
-              "uri" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:", "", str_replace("/", "", $node->uri)),
-            ];
+        try{
+          $Nodes = Api_products::leftjoin('api_product_price as app' , function($join){
+            $join->on('app.nid', '=', 'api_products.nid');
+          })->leftjoin('api_attribute_map as aam' , function($join){
+                $join->on('aam.nid', '=', 'api_products.nid');
+          })->leftjoin('taxonomy_vocabulary as taxv' , function($join){
+              $join->on('taxv.machine_name', '=', DB::raw("flavour"));
+        //   })->leftjoin('taxonomy_term_data as txflv' , function($join){
+        //       $join->on('txflv.tid', '=', 'field_data_field_flavour.field_flavour_tid');
+          })
+          ->where([
+              ["api_products.status" , "=" , 1],
+              ["api_products.nid" , "=" , $nid]
+              ])
+          ->groupBy("api_products.nid")
+          ->select("api_products.nid", "api_products.long_title", "app.pid", "app.sku"
+          , "app.price", "app.weight", DB::raw("group_concat(aam.attr_id)"))
+        //   ->get();
+          ->toSql();
+          print_r($Nodes);
+          exit;
+  
+          // get images
+          $NodesImg = Nodes::join('field_data_field_images' , function($join){
+              $join->on('field_data_field_images.entity_id', '=', 'node.nid'); 
+          })->join('file_managed' , function($join){
+              $join->on('file_managed.fid', '=', 'field_data_field_images.field_images_fid');
+          })->whereIn("node.type" , ['regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastries', 'photo_cake', 'plum_cake', 'theme_cake', 'addon'])
+          ->where([
+              ["node.status" , "=" , "1"],
+              ["node.nid" , "=" , $nid]
+              ])
+          // ->groupBy("commerce_product.product_id")
+          ->select("file_managed.fid", "file_managed.filename", "file_managed.uri", "field_data_field_images.field_images_alt", "field_data_field_images.field_images_title" )
+          ->orderBy("field_data_field_images.delta")
+          ->get();
+          // dd($NodesImg);
+  
+          $response = [];
+          if($Nodes->first()){
+              $response = [
+                  "node_id" => $Nodes[0]->nid,
+                  "product_type" => $Nodes[0]->type,
+                  "product_id" => $Nodes[0]->product_id,
+                  "sku" => $Nodes[0]->sku,
+                  "title" => $Nodes[0]->title,
+                  "long_title" => $Nodes[0]->long_title,
+                  "amount" => $Nodes[0]->amount,
+                  "sell_price" => $Nodes[0]->sell_price,
+                  "mini_desc" => $Nodes[0]->field_mini_description_value,                
+              ];
+              $wt = $fl = $oc = [];
+              foreach($Nodes as $node){
+                  // prepare weight array here
+                  $wt[$node->field_weight_tid] = [
+                      "weight" => $node->weight,
+                      "price" => $node->amount,
+                      "sprice" => $node->sell_price,
+                      // "cprice" => $node->amount,
+                  ];
+                  // prepare flavour array here
+                  if($node->field_flavour_tid != null) {
+                    $fl[$node->field_flavour_tid] = $node->flavour;
+                  }
+                  // prepare occasion array here
+                  if($node->field_tx_occasion_list_tid != null) {
+                    $oc[$node->field_tx_occasion_list_tid] = $node->occasion;
+                  }
+              }
+              $response['attributes']['weight'] = $wt;
+              $response['attributes']['flavour'] = $fl;
+              $response['attributes']['occasion'] = $oc;
+              // $response['product']['attributes']['occasion'] = $fl;
+          } else {
+              // no record Found
+              $messages = "No record Found";
+              $response =  $this->ResponseComponent->error($messages);
           }
+          $images = [];
+          if($NodesImg->first()) {
+            foreach($NodesImg as $node) {
+              $images[] = [
+                "fid" => $node->fid,
+                "name" => $node->filename,
+                "uri" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:", "", str_replace("/", "", $node->uri)),
+              ];
+            }
+          }
+          $response['images'] = $images;
+          $messages = "Records Found Successfully";
+          $response =  $this->ResponseComponent->success($messages, $response);
+        } catch (Exception $e) { 
+          $response =  $this->ResponseComponent->exception($e->getMessage());            
         }
-        $response['images'] = $images;
-        $messages = "Records Found Successfully";
-        $response =  $this->ResponseComponent->success($messages, $response);
-      } catch (Exception $e) { 
-        $response =  $this->ResponseComponent->exception($e->getMessage());            
+  
+        return response()->json($response);
       }
 
-      return response()->json($response);
-    }
-}
+    public function getdetailsss($nid){
+        try{
+          $Nodes = Nodes::join('field_data_field_product' , function($join){
+              $join->on('field_data_field_product.entity_id', '=', 'node.nid'); 
+          })->join('commerce_product' , function($join){
+              $join->on('field_data_field_product.field_product_product_id', '=', 'commerce_product.product_id');
+          })->join('field_data_field_long_title' , function($join){
+              $join->on('field_data_field_long_title.entity_id', '=', 'node.nid');
+          })->join('field_data_field_mini_description' , function($join){
+              $join->on('field_data_field_mini_description.entity_id', '=', 'node.nid');
+          })->join('field_data_field_description' , function($join){
+              $join->on('field_data_field_description.entity_id', '=', 'node.nid');
+          })->leftjoin('field_data_commerce_price' , function($join){
+              $join->on('field_data_commerce_price.entity_id', '=', 'commerce_product.product_id');
+          })->leftjoin('field_data_field_sell_price' , function($join){
+              $join->on('field_data_field_sell_price.entity_id', '=', 'commerce_product.product_id');
+          // })->leftjoin('field_data_field_cost_price' , function($join){
+          //     $join->on('field_data_field_cost_price.entity_id', '=', 'commerce_product.product_id');
+          })->leftjoin('field_data_field_weight' , function($join){
+              $join->on('field_data_field_weight.entity_id', '=', 'commerce_product.product_id');
+          })->leftjoin('taxonomy_term_data' , function($join){
+              $join->on('taxonomy_term_data.tid', '=', 'field_data_field_weight.field_weight_tid');
+          })->leftjoin('field_data_field_flavour' , function($join){
+              $join->on('field_data_field_flavour.entity_id', '=', 'node.nid');
+          })->leftjoin('taxonomy_term_data as txflv' , function($join){
+              $join->on('txflv.tid', '=', 'field_data_field_flavour.field_flavour_tid');
+          // })->leftjoin('field_data_field_tx_occasion_list' , function($join){
+          //     $join->on('field_data_field_tx_occasion_list.entity_id', '=', 'node.nid');
+          // })->leftjoin('taxonomy_term_data as txocc' , function($join){
+          //     $join->on('txocc.tid', '=', 'field_data_field_tx_occasion_list.field_tx_occasion_list_tid');
+          })->whereIn("node.type" , ['regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastries', 'photo_cake', 'plum_cake', 'theme_cake', 'addon'])
+          ->where([
+              ["node.status" , "=" , "1"],
+              ["node.nid" , "=" , $nid]
+              ])
+          // ->groupBy("commerce_product.product_id")
+          ->select("node.nid", "node.type", "commerce_product.product_id", "commerce_product.sku", "node.title",
+            DB::raw("field_data_field_long_title.field_long_title_value AS long_title"),
+            DB::raw("(field_data_commerce_price.commerce_price_amount / 100) AS amount") ,
+            DB::raw("(field_data_field_sell_price.field_sell_price_amount / 100) AS sell_price") ,
+            DB::raw("(taxonomy_term_data.name) AS weight"), "field_data_field_weight.field_weight_tid",
+            DB::raw("(txflv.name) AS flavour"), "field_data_field_flavour.field_flavour_tid",
+          //   DB::raw("(txocc.name) AS occasion"), "field_data_field_tx_occasion_list.field_tx_occasion_list_tid",
+             'field_data_field_mini_description.field_mini_description_value')
+          ->get();
+          // ->toSql();
+          // print_r($Nodes);
+          // exit;
+  
+          // get images
+          $NodesImg = Nodes::join('field_data_field_images' , function($join){
+              $join->on('field_data_field_images.entity_id', '=', 'node.nid'); 
+          })->join('file_managed' , function($join){
+              $join->on('file_managed.fid', '=', 'field_data_field_images.field_images_fid');
+          })->whereIn("node.type" , ['regular_cake' , 'cup_cake', 'jar_cakes', 'party_cake', 'pastries', 'photo_cake', 'plum_cake', 'theme_cake', 'addon'])
+          ->where([
+              ["node.status" , "=" , "1"],
+              ["node.nid" , "=" , $nid]
+              ])
+          // ->groupBy("commerce_product.product_id")
+          ->select("file_managed.fid", "file_managed.filename", "file_managed.uri", "field_data_field_images.field_images_alt", "field_data_field_images.field_images_title" )
+          ->orderBy("field_data_field_images.delta")
+          ->get();
+          // dd($NodesImg);
+  
+          $response = [];
+          if($Nodes->first()){
+              $response = [
+                  "node_id" => $Nodes[0]->nid,
+                  "product_type" => $Nodes[0]->type,
+                  "product_id" => $Nodes[0]->product_id,
+                  "sku" => $Nodes[0]->sku,
+                  "title" => $Nodes[0]->title,
+                  "long_title" => $Nodes[0]->long_title,
+                  "amount" => $Nodes[0]->amount,
+                  "sell_price" => $Nodes[0]->sell_price,
+                  "mini_desc" => $Nodes[0]->field_mini_description_value,                
+              ];
+              $wt = $fl = $oc = [];
+              foreach($Nodes as $node){
+                  // prepare weight array here
+                  $wt[$node->field_weight_tid] = [
+                      "weight" => $node->weight,
+                      "price" => $node->amount,
+                      "sprice" => $node->sell_price,
+                      // "cprice" => $node->amount,
+                  ];
+                  // prepare flavour array here
+                  if($node->field_flavour_tid != null) {
+                    $fl[$node->field_flavour_tid] = $node->flavour;
+                  }
+                  // prepare occasion array here
+                  if($node->field_tx_occasion_list_tid != null) {
+                    $oc[$node->field_tx_occasion_list_tid] = $node->occasion;
+                  }
+              }
+              $response['attributes']['weight'] = $wt;
+              $response['attributes']['flavour'] = $fl;
+              $response['attributes']['occasion'] = $oc;
+              // $response['product']['attributes']['occasion'] = $fl;
+          } else {
+              // no record Found
+              $messages = "No record Found";
+              $response =  $this->ResponseComponent->error($messages);
+          }
+          $images = [];
+          if($NodesImg->first()) {
+            foreach($NodesImg as $node) {
+              $images[] = [
+                "fid" => $node->fid,
+                "name" => $node->filename,
+                "uri" => Config('constant.BAKINGO_IMAGE_BASE_URL'). str_replace("public:", "", str_replace("/", "", $node->uri)),
+              ];
+            }
+          }
+          $response['images'] = $images;
+          $messages = "Records Found Successfully";
+          $response =  $this->ResponseComponent->success($messages, $response);
+        } catch (Exception $e) { 
+          $response =  $this->ResponseComponent->exception($e->getMessage());            
+        }
+  
+        return response()->json($response);
+      }
+  }
