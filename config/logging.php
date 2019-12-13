@@ -95,6 +95,16 @@ return [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
         ],
+        'migration' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/migration.log'),
+            'level' => 'debug',
+        ],
+        'datasync' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/datasync.log'),
+            'level' => 'debug',
+        ],
     ],
 
 ];
