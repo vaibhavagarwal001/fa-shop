@@ -49,6 +49,8 @@ Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk) {
     Route::get('cakes/for-him', $merchant_bk . 'ProductsController@getlisting');
     Route::get('cakes/for-him/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
     Route::get('getlisting/{currentPage}', $merchant_bk . 'ProductsController@getlisting');
+    
+    // for all meta info
     Route::get('meta-info/getlisting', $merchant_bk . 'MetaInfoController@getMetaInfo');
     Route::get('meta-info/chocolate-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
     Route::get('meta-info/eggless-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
@@ -56,6 +58,7 @@ Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk) {
     Route::get('meta-info/photo-cakes', $merchant_bk . 'MetaInfoController@getMetaInfo');
     Route::get('meta-info/cakes/for-him', $merchant_bk . 'MetaInfoController@getMetaInfo');
     
+    Route::get('meta-info/product/{nid}', $merchant_bk . 'MetaInfoController@getMetaProductDetails');
     
     Route::get('rewiew/{cityName}/cakes', $merchant_bk . 'ReviewAndRatingController@getReviews');
     Route::get('rewiew/{cityName}/cake-delivery', $merchant_bk . 'ReviewAndRatingController@getReviews');
@@ -67,6 +70,7 @@ Route::group( array('prefix' => 'bakingo'), function() use ($merchant_bk) {
     Route::get('menu/{menuType}', $merchant_bk . 'MenuController@getMenu');
 });
 
+// routing for floweraura
 Route::group( array('prefix' => 'floweraura'), function() use ($merchant_fa) {
     // Route::get('getlisting', $merchant_fa . 'ProductsController@getlisting');
     // Route::get('getlisting/{currentPage}', $merchant_fa . 'ProductsController@getlisting');

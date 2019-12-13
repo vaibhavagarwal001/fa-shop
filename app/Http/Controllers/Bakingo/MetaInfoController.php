@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Http\Controllers\Component\ResponseComponent;
+use App\Http\Controllers\Component\ValidateComponent;
 use App\Models\Bakingo\TaxonomyVocabulary;
 use App\Models\Bakingo\MenuRouters;
+use App\Models\Bakingo\Metatag;
 use App\Models\Bakingo\ViewsDisplay;
 use App\Models\Bakingo\ViewsView;
 use Exception;
@@ -17,12 +19,14 @@ class MetaInfoController extends Controller
 {
 
     protected $ResponseComponent;
+    protected $helper;
 
 
     public function __construct()
     {
         // $result = DB::connection('bakingo_mysql')->select(DB::raw("set sql_mode=''"));
         $this->ResponseComponent = new ResponseComponent();
+        $this->helper = new ValidateComponent();
     }
 
     //
@@ -189,5 +193,51 @@ class MetaInfoController extends Controller
         }
         return response()->json($response);
     }
+
+
+
+    public function getMetaProductDetails($nid) {
+        try {
+            $nid = $this->helper->valid($nid);
+
+            $metatags = Metatag::where([
+                ["entity_id",  "=", $nid],
+                ["entity_type",  "=", "node"]
+            ])->select("data")->first();
+
+            if (!empty($metatags)) {
+                $metatags = unserialize($metatags->data);
+
+                $data = [];
+                if (!empty($metatags)) {
+                    $metaData = [];
+                    $metaData['title'] = (!empty($metatags['title']['value']) ? $metatags['title']['value'] : "");
+                    $metaData['description'] = (!empty($metatags['description']['value']) ? $metatags['description']['value'] : "");
+                    $metaData['keywords'] = (!empty($metatags['keywords']['value']) ? $metatags['keywords']['value'] : "");
+                    $metaData['og:email'] = (!empty($metatags['og:email']['value']) ? $metatags['og:email']['value'] : "");
+                    $metaData['og:type'] = (!empty($metatags['og:type']['value']) ? $metatags['og:type']['value'] : "");
+                    $metaData['og:url'] = (!empty($metatags['og:url']['value']) ? $metatags['og:url']['value'] : "");
+                    $metaData['og:title'] = (!empty($metatags['og:title']['value']) ? $metatags['og:title']['value'] : "");
+                    $metaData['og:description'] = (!empty($metatags['og:description']['value']) ? $metatags['og:description']['value'] : "");
+                    $metaData['twitter:url'] = (!empty($metatags['twitter:url']['value']) ? $metatags['twitter:url']['value'] : "");
+                    $metaData['twitter:title'] = (!empty($metatags['twitter:title']['value']) ? $metatags['twitter:title']['value'] : "");
+                    $metaData['twitter:description'] = (!empty($metatags['twitter:description']['value']) ? $metatags['twitter:description']['value'] : "");
+
+                    $data["meta"] = $metaData;
+                    $response = $this->ResponseComponent->success("Data Found", $data);
+                } else {
+                    $response = $this->ResponseComponent->error("No Meta Info For this Page");
+                }
+            } else {
+                $response = $this->ResponseComponent->error("No Meta Info For this Page");
+            }
+
+        } catch (Exception $e) {
+            $response =  $this->ResponseComponent->exception($e->getMessage());
+        }
+        return response()->json($response);
+    }
+
+
 
 }

@@ -4,6 +4,11 @@ namespace App\Http\Controllers\Bakingo;
 
 use Illuminate\Http\Request;
 
+// controllers
+use App\Http\Controllers\Component\ResponseComponent;
+use App\Http\Controllers\Component\ValidateComponent;
+use App\Http\Controllers\Bakingo\MetaInfoController;
+
 /** Models */
 
 use App\Models\Bakingo\Nodes;
@@ -19,9 +24,6 @@ use App\Models\Bakingo\MenuRouters;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 
-use App\Http\Controllers\Component\ResponseComponent;
-use App\Http\Controllers\Component\ValidateComponent;
-
 use App\Models\Bakingo\TaxonomyVocabulary;
 use App\Models\Bakingo\ViewsDisplay;
 use App\Models\Bakingo\ViewsView;
@@ -32,6 +34,7 @@ class ProductsController extends Controller
 {
 
     protected $ResponseComponent;
+    protected $MetaInfoController;
     protected $helper;
 
     protected $tbl_api_products;
@@ -64,6 +67,7 @@ class ProductsController extends Controller
         $this->ResponseComponent = new ResponseComponent();
 
         $this->helper = new ValidateComponent();
+        $this->MetaInfoController = new MetaInfoController();
         
         // define table names
         $this->tbl_api_products = "api_products";
@@ -295,7 +299,7 @@ class ProductsController extends Controller
     * params : nid
     * result : json/array
     *  */
-    public function getdetails($nid)
+    public function getdetails($nid, Request $request)
     {
         try {
             $nid = $this->helper->valid($nid);
@@ -335,10 +339,6 @@ class ProductsController extends Controller
                 "{$this->tbl_api_product_images}.field_images_title"
             )
             ->get();
-            // ->toSql();
-            // echo "<pre>"; print_r($Nodes);
-            // exit;
-
 
             $NodeAttributes = Api_products::leftjoin($this->tbl_api_attribute_map, function ($join) {
                 $join->on($this->tbl_api_products .'.nid', '=', $this->tbl_api_attribute_map.'.nid');
@@ -362,15 +362,12 @@ class ProductsController extends Controller
                 "{$this->tbl_taxonomy_vocabulary}.machine_name",
                 DB::raw("group_concat( DISTINCT ".$this->tbl_taxonomy_term_data.".name) as attribs")
             )->get();
-            // ->toSql();
-            // echo "<pre>";
-            // print_r($NodeAttributes);
-            // exit;
 
             $response = [];
+            $wt = $fl = $oc = $images = [];
+
             if ($Nodes->first()) {
                 
-                $wt = $fl = $oc = $images = [];
                 foreach ($Nodes as $key => $node) {
                     // print_r($node); die;
                     if($key == 0) {
@@ -414,23 +411,23 @@ class ProductsController extends Controller
                   }
                 }
 
-                // echo "<pre>";
-                // print_r($response['attributes']);
-                // die;
-
-
-                // prepare flavour array here
-                // if ($NodeAttributes[]->field_flavour_tid != null) {
-                //     $fl[$node->field_flavour_tid] = $node->flavour;
-                // }
-                // prepare occasion array here
-
                 $response['attributes']['weight'] = $wt;
                 // $response['attributes']['flavour'] = $fl;
                 // $response['attributes']['hasflavour'] = (count($fl) ? true : false);
                 // $response['attributes']['occasion'] = $oc;
                 // $response['attributes']['hasoccasion'] = (count($oc) ? true : false);
                 // $response['product']['attributes']['occasion'] = $fl;
+
+                // send meta information
+                $params = $request->all();
+                if(!empty($params) && ($params['metainfo'] == 1)) {
+                  $metaInfo = $this->MetaInfoController->getMetaProductDetails($nid);
+                  $metaData = $metaInfo->getData();
+                  if(!empty($metaData->status_code) && ($metaData->status_code == 200)) {
+                    $response['meta'] = !empty($metaData->data->meta) ? $metaData->data->meta : [];
+                  }
+                }
+
             } else {
                 // no record Found
                 $messages = "No record Found";
